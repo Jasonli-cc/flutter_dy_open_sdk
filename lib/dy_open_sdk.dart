@@ -1,5 +1,9 @@
 import 'dy_open_sdk_platform_interface.dart';
 
+// 导出异常处理和配置相关类
+export 'dy_open_sdk_exception.dart';
+export 'dy_open_sdk_config.dart';
+
 class DyOpenSdk {
   Future<String?> getPlatformVersion() {
     return DyOpenSdkPlatform.instance.getPlatformVersion();

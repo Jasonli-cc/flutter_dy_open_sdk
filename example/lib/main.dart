@@ -54,17 +54,40 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _initializeSDK() async {
     try {
+      // 配置异常处理
+      DyOpenSdkConfig.setExceptionConfig(
+        DyOpenSdkExceptionConfig(
+          enableAutoRetry: true,
+          maxRetryCount: 2,
+          printStackTraceInDebug: true,
+          customExceptionHandler: (exception) {
+            DyOpenSdkLogger.e('自定义异常处理: ${exception.message}');
+          },
+        ),
+      );
+      
       // 请替换为您的实际clientKey
       const clientKey = "your_client_key_here";
-      final result = await _dyOpenSdkPlugin.initialize(clientKey: clientKey, debug: true);
-
+      final result = await _dyOpenSdkPlugin.initialize(
+        clientKey: clientKey,
+        debug: true,
+      );
+      
       setState(() {
         _status = result['success'] == true ? 'SDK初始化成功' : 'SDK初始化失败';
       });
+      
+      DyOpenSdkLogger.i('SDK初始化成功');
+    } on DyOpenSdkException catch (e) {
+      setState(() {
+        _status = 'SDK初始化失败: ${e.userFriendlyMessage}';
+      });
+      DyOpenSdkLogger.e('SDK初始化异常', e);
     } catch (e) {
       setState(() {
-        _status = 'SDK初始化失败: $e';
+        _status = 'SDK初始化失败: 未知错误';
       });
+      DyOpenSdkLogger.e('未知异常', e);
     }
   }
 

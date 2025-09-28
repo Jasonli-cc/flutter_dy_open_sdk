@@ -65,18 +65,38 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
       "getPlatformVersion" -> result.success("Android ${android.os.Build.VERSION.RELEASE}")
       "initialize" -> {
         val args = call.arguments as? Map<*, *> ?: run {
-          result.error("BAD_ARGS", "Arguments must be a map.", null); return
+          DyOpenSdkException.parameterError(result, "Arguments must be a map.")
+          return
         }
-        val clientKey = args["clientKey"] as? String
-        if (clientKey.isNullOrEmpty()) {
-          result.error("BAD_ARGS", "clientKey is required.", null); return
-        }
-        val debug = args["debug"] as? Boolean ?: false
         try {
+          val clientKey = args["clientKey"] as? String ?: run {
+            DyOpenSdkException.parameterError(result, "clientKey is required.", "clientKey")
+            return
+          }
+          
+          if (clientKey.isBlank()) {
+            DyOpenSdkException.handleException(
+              result, 
+              IllegalArgumentException("clientKey cannot be empty"),
+              DyOpenSdkException.ExceptionType.PARAMETER,
+              DyOpenSdkException.ErrorCode.INVALID_CLIENT_KEY,
+              "客户端密钥不能为空"
+            )
+            return
+          }
+          
+          val debug = args["debug"] as? Boolean ?: false
           DouYinOpenApiFactory.setDebuggable(debug)
           val context = applicationContext ?: activity?.applicationContext
           if (context == null) {
-            result.error("NO_CONTEXT", "Application context is null.", null); return
+            DyOpenSdkException.handleException(
+              result,
+              IllegalStateException("Application context is null"),
+              DyOpenSdkException.ExceptionType.INITIALIZATION,
+              DyOpenSdkException.ErrorCode.NO_CONTEXT,
+              "应用上下文为空，请确保插件正确初始化"
+            )
+            return
           }
           val config = DouYinOpenSDKConfig.Builder()
             .context(context)
@@ -89,24 +109,38 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
           // 保存配置信息
           DyOpenSdkConfig.saveConfig(clientKey, debug)
           
-          result.success(mapOf("success" to true))
+          android.util.Log.d("DyOpenSdk", "SDK初始化成功: clientKey=${clientKey.take(8)}***, debug=$debug")
+          DyOpenSdkException.success(result, mapOf("success" to true, "debug" to debug))
         } catch (e: Exception) {
-          result.error("INIT_ERROR", e.message, null)
+          DyOpenSdkException.handleException(
+            result,
+            e,
+            DyOpenSdkException.ExceptionType.INITIALIZATION,
+            DyOpenSdkException.ErrorCode.INIT_ERROR,
+            "SDK初始化失败"
+          )
         }
       }
       "shareImages" -> {
-        val act = activity
-        if (act == null) {
-          result.error("NO_ACTIVITY", "Activity is null. Ensure plugin is attached to an Activity.", null)
+        val act = activity ?: run {
+          DyOpenSdkException.handleException(
+            result,
+            IllegalStateException("Activity is null"),
+            DyOpenSdkException.ExceptionType.API_CALL,
+            DyOpenSdkException.ErrorCode.NO_ACTIVITY,
+            "Activity为空，无法执行分享操作"
+          )
           return
         }
         val args = call.arguments as? Map<*, *> ?: run {
-          result.error("BAD_ARGS", "Arguments must be a map.", null); return
+          DyOpenSdkException.parameterError(result, "Arguments must be a map.")
+          return
         }
         try {
           val media = (args["media"] as? List<*>)?.map { it.toString() } ?: emptyList()
           if (media.isEmpty()) {
-            result.error("BAD_ARGS", "media list cannot be empty.", null); return
+            DyOpenSdkException.parameterError(result, "media list cannot be empty.", "media")
+            return
           }
           val isAlbum = args["isAlbum"] as? Boolean ?: false
           val shareId = args["shareId"] as? String
@@ -118,14 +152,25 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
           val request = Share.Request()
           // 普通分享不设置shareToType，只有发日常才设置为1
           request.mMediaContent = MediaContent().apply {
-            mMediaObject = when {
-              isAlbum -> ImageAlbumObject().apply {
+            mMediaObject = if (isAlbum && media.size > 1) {
+              // 图集模式：多张图片时启用图集
+              ImageAlbumObject().apply {
                 mImagePaths = ArrayList<String>().apply { addAll(convertPathsWithProvider(act, media)) }
                 isImageAlbum = true
+                android.util.Log.d("DyOpenSdk", "使用图集模式，图片数量: ${media.size}")
               }
-              else -> ImageAlbumObject().apply {
+            } else if (media.size == 1) {
+              // 单张图片：使用ImageObject
+              ImageObject().apply {
+                mImagePaths = ArrayList<String>().apply { addAll(convertPathsWithProvider(act, media)) }
+                android.util.Log.d("DyOpenSdk", "使用单图模式")
+              }
+            } else {
+              // 多张图片但不启用图集：使用ImageAlbumObject但不开启图集模式
+              ImageAlbumObject().apply {
                 mImagePaths = ArrayList<String>().apply { addAll(convertPathsWithProvider(act, media)) }
                 isImageAlbum = false
+                android.util.Log.d("DyOpenSdk", "使用多图非图集模式，图片数量: ${media.size}")
               }
             }
           }
@@ -136,19 +181,42 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
           shareParamMap?.let { request.shareParam = buildShareParam(act, it, media) }
           request.callerLocalEntry = DyOpenSdkCallbackActivity::class.java.canonicalName
 
-          val api = DouYinOpenApiFactory.create(act)
-          if (api != null) {
-            android.util.Log.d("DyOpenSdk", "开始分享图片，媒体数量: ${media.size}, isAlbum: $isAlbum")
-            android.util.Log.d("DyOpenSdk", "分享请求配置: callerLocalEntry=${request.callerLocalEntry}")
-            val shareResult = api.share(request)
-            android.util.Log.d("DyOpenSdk", "分享请求已发送，结果: $shareResult")
-            result.success(mapOf("success" to shareResult))
-          } else {
-            android.util.Log.e("DyOpenSdk", "无法创建抖音API实例")
-            result.error("API_ERROR", "无法创建抖音API实例，请检查是否已安装抖音", null)
+          val api = DouYinOpenApiFactory.create(act) ?: run {
+            DyOpenSdkException.handleException(
+              result,
+              IllegalStateException("Cannot create DouYin API instance"),
+              DyOpenSdkException.ExceptionType.API_CALL,
+              DyOpenSdkException.ErrorCode.DOUYIN_NOT_INSTALLED,
+              "无法创建抖音API实例，请检查是否已安装抖音"
+            )
+            return
           }
+          
+          android.util.Log.d("DyOpenSdk", "开始分享图片，媒体数量: ${media.size}, isAlbum参数: $isAlbum")
+          android.util.Log.d("DyOpenSdk", "分享请求配置: callerLocalEntry=${request.callerLocalEntry}")
+          android.util.Log.d("DyOpenSdk", "媒体对象类型: ${request.mMediaContent?.mMediaObject?.javaClass?.simpleName}")
+          
+          // 检查图集模式支持（图集模式是基础分享功能的一部分）
+          if (isAlbum && media.size > 1) {
+            android.util.Log.d("DyOpenSdk", "启用图集模式，图片数量: ${media.size}")
+          }
+          
+          val shareResult = api.share(request)
+          android.util.Log.d("DyOpenSdk", "分享请求已发送，结果: $shareResult")
+          
+          DyOpenSdkException.success(result, mapOf(
+            "success" to shareResult,
+            "mediaCount" to media.size,
+            "isAlbum" to isAlbum
+          ))
         } catch (e: Exception) {
-          result.error("SHARE_ERROR", e.message, null)
+          DyOpenSdkException.handleException(
+            result,
+            e,
+            DyOpenSdkException.ExceptionType.SHARE,
+            DyOpenSdkException.ErrorCode.SHARE_ERROR,
+            "图片分享失败"
+          )
         }
       }
       "shareVideos" -> {

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import 'dy_open_sdk_platform_interface.dart';
+import 'dy_open_sdk_exception.dart';
 
 /// An implementation of [DyOpenSdkPlatform] that uses method channels.
 class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
@@ -22,13 +23,18 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
     bool debug = false,
     Map<String, dynamic>? options,
   }) async {
-    final result = await methodChannel.invokeMapMethod<String, dynamic>('initialize', {
-      'clientKey': clientKey,
-      'clientSecret': clientSecret,
-      'debug': debug,
-      'options': options,
+    return await DyOpenSdkExceptionHandler.handleMethodCall(() async {
+      if (clientKey.isEmpty) {
+        throw DyOpenSdkException.parameterError('clientKey不能为空', paramName: 'clientKey');
+      }
+      
+      final result = await methodChannel.invokeMapMethod<String, dynamic>('initialize', {
+        'clientKey': clientKey,
+        'debug': debug,
+        // clientSecret和options在Android端不使用，但保持API一致性
+      });
+      return Map<String, dynamic>.from(result ?? {});
     });
-    return Map<String, dynamic>.from(result ?? {'success': false});
   }
 
   @override
@@ -59,16 +65,29 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
     bool newShare = false,
     Map<String, dynamic>? shareParam,
   }) async {
-    final result = await methodChannel.invokeMapMethod<String, dynamic>('shareImages', {
-      'media': media,
-      'isAlbum': isAlbum,
-      'shareId': shareId,
-      'microAppInfo': microAppInfo,
-      'hashTags': hashTags,
-      'newShare': newShare,
-      'shareParam': shareParam,
+    return await DyOpenSdkExceptionHandler.handleMethodCall(() async {
+      if (media.isEmpty) {
+        throw DyOpenSdkException.parameterError('媒体文件列表不能为空', paramName: 'media');
+      }
+      
+      // 验证文件路径
+      for (final path in media) {
+        if (path.isEmpty) {
+          throw DyOpenSdkException.parameterError('媒体文件路径不能为空', paramName: 'media');
+        }
+      }
+      
+      final result = await methodChannel.invokeMapMethod<String, dynamic>('shareImages', {
+        'media': media,
+        'isAlbum': isAlbum,
+        'shareId': shareId,
+        'microAppInfo': microAppInfo,
+        'hashTags': hashTags,
+        'newShare': newShare,
+        'shareParam': shareParam,
+      });
+      return Map<String, dynamic>.from(result ?? {});
     });
-    return Map<String, dynamic>.from(result ?? {});
   }
 
   @override

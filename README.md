@@ -35,6 +35,57 @@
    - <mcfile name="DyOpenSdkConfig.kt" path="/Users/lichaochao/dy_open_sdk/android/src/main/kotlin/com/plugins/dy_open_sdk/DyOpenSdkConfig.kt"></mcfile> - 统一的配置管理
    - 支持配置持久化存储
 
+## 异常处理
+
+本SDK提供了统一的异常处理机制，所有原生端的异常都会被统一处理并传递给Flutter端。
+
+### 异常类型
+
+- `DyOpenSdkExceptionType.initialization` - SDK初始化异常
+- `DyOpenSdkExceptionType.parameter` - 参数异常
+- `DyOpenSdkExceptionType.fileOperation` - 文件操作异常
+- `DyOpenSdkExceptionType.apiCall` - API调用异常
+- `DyOpenSdkExceptionType.authorization` - 授权异常
+- `DyOpenSdkExceptionType.share` - 分享异常
+- `DyOpenSdkExceptionType.network` - 网络异常
+
+### 异常处理配置
+
+```dart
+// 配置异常处理行为
+DyOpenSdkConfig.setExceptionConfig(
+  DyOpenSdkExceptionConfig(
+    enableAutoRetry: true,
+    maxRetryCount: 3,
+    printStackTraceInDebug: true,
+    customExceptionHandler: (exception) {
+      // 自定义异常处理逻辑
+      print('异常: ${exception.userFriendlyMessage}');
+    },
+  ),
+);
+```
+
+### 异常捕获示例
+
+```dart
+try {
+  await dyOpenSdk.shareImages(media: [imagePath]);
+} on DyOpenSdkException catch (e) {
+  // 处理SDK特定异常
+  if (e.isUserCancelled) {
+    print('用户取消了操作');
+  } else if (e.isNetworkError) {
+    print('网络错误: ${e.userFriendlyMessage}');
+  } else {
+    print('操作失败: ${e.userFriendlyMessage}');
+  }
+} catch (e) {
+  // 处理其他异常
+  print('未知错误: $e');
+}
+```
+
 ## 快速开始
 
 ### 1. 初始化SDK
@@ -79,8 +130,15 @@ try {
 ```dart
 // 分享图片
 await dyOpenSdk.shareImages(
+  media: ['/path/to/image1.jpg', '/path/to/image2.jpg'],
+  isAlbum: true, // true为图集模式（需要多张图片）
+  hashTags: ['#测试标签'],
+);
+
+// 单张图片分享
+await dyOpenSdk.shareImages(
   media: ['/path/to/image.jpg'],
-  isAlbum: false, // true为图集模式
+  isAlbum: false, // 单张图片时isAlbum无效
   hashTags: ['#测试标签'],
 );
 
@@ -152,6 +210,11 @@ await dyOpenSdk.shareDaily(
 2. **文件分享**：Android 10+建议使用Content URI而非直接文件路径
 3. **权限申请**：分享功能需要相应的开放平台权限配置
 4. **版本兼容**：部分功能需要特定版本的抖音客户端支持
+5. **图集模式**：
+   - 图集模式需要至少2张图片才能生效
+   - 单张图片时会自动使用单图模式，忽略isAlbum参数
+   - 图集模式下不支持贴纸功能
+   - 需要抖音客户端支持图集API
 
 ## 开发环境
 

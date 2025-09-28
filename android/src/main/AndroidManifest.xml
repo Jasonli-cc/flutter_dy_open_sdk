@@ -1,0 +1,34 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  package="com.plugins.dy_open_sdk">
+
+  <!-- 网络权限 -->
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+   <queries>
+    <!--允许查询抖音和抖音极速版的软件包信息-->
+    <package android:name="com.ss.android.ugc.aweme" />
+    <package android:name="com.ss.android.ugc.aweme.lite" />
+    <package android:name="com.ss.android.ugc.live" />
+  </queries>
+
+  <application>
+    <!-- 抖音SDK回调处理Activity -->
+    <activity
+        android:name="com.plugins.dy_open_sdk.DyOpenSdkCallbackActivity"
+        android:exported="true" />
+
+    <!-- 用户留在抖音的广播接收器 -->
+    <receiver
+        android:name="com.plugins.dy_open_sdk.StayInDyReceiver"
+        android:exported="true">
+      <intent-filter>
+        <action android:name="com.aweme.opensdk.action.stay.in.dy" />
+        <action android:name="com.aweme.opensdk.action.stay.in.dy.im" />
+      </intent-filter>
+    </receiver>
+        
+    <!-- 不在库中声明 FileProvider，避免与宿主应用冲突。宿主应用需自行声明其 FileProvider。 -->
+  </application>
+
+</manifest>

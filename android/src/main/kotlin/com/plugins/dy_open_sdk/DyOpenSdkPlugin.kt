@@ -46,6 +46,11 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
   // 授权相关
   private var pendingAuthResult: MethodChannel.Result? = null
   private var authState: String? = null
+  
+  // 分享相关
+  private var pendingShareResult: MethodChannel.Result? = null
+  private var pendingShareToContactResult: MethodChannel.Result? = null
+  private var pendingOpenRecordResult: MethodChannel.Result? = null
 
   companion object {
     var instance: DyOpenSdkPlugin? = null
@@ -201,14 +206,11 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             android.util.Log.d("DyOpenSdk", "启用图集模式，图片数量: ${media.size}")
           }
           
+          // 保存pending result以便回调时使用
+          pendingShareResult = result
+          
           val shareResult = api.share(request)
           android.util.Log.d("DyOpenSdk", "分享请求已发送，结果: $shareResult")
-          
-          DyOpenSdkException.success(result, mapOf(
-            "success" to shareResult,
-            "mediaCount" to media.size,
-            "isAlbum" to isAlbum
-          ))
         } catch (e: Exception) {
           DyOpenSdkException.handleException(
             result,
@@ -255,8 +257,9 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
 
           val api = DouYinOpenApiFactory.create(act)
           if (api != null) {
+            // 保存pending result以便回调时使用
+            pendingShareResult = result
             api.share(request)
-            result.success(mapOf("success" to true))
           } else {
             result.error("API_ERROR", "无法创建抖音API实例，请检查是否已安装抖音", null)
           }
@@ -309,8 +312,9 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
 
           val api = DouYinOpenApiFactory.create(act)
           if (api.isSupportApi(CommonConstants.SUPPORT.SHARE, CommonConstants.SUPPORT.SHARE_API.SHARE_DAILY)) {
+            // 保存pending result以便回调时使用
+            pendingShareResult = result
             api.share(request)
-            result.success(mapOf("success" to true))
           } else {
             result.error("UNSUPPORTED_DAILY", "当前抖音版本不支持发日常", null)
           }
@@ -342,8 +346,9 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
           request.callerLocalEntry = DyOpenSdkCallbackActivity::class.java.canonicalName
           val api = DouYinOpenApiFactory.create(act)
           if (api.isAppSupportShareToContacts) {
+            // 保存pending result以便回调时使用
+            pendingShareToContactResult = result
             api.shareToContacts(request)
-            result.success(mapOf("success" to true))
           } else {
             result.error("UNSUPPORTED_CONTACTS", "当前抖音版本不支持分享给好友", null)
           }
@@ -382,8 +387,9 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
 
           val api = DouYinOpenApiFactory.create(act)
           if (api.isAppSupportShareToContacts) {
+            // 保存pending result以便回调时使用
+            pendingShareToContactResult = result
             api.shareToContacts(request)
-            result.success(mapOf("success" to true))
           } else {
             result.error("UNSUPPORTED_CONTACTS", "当前抖音版本不支持分享给好友", null)
           }
@@ -412,8 +418,9 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
 
           val api = DouYinOpenApiFactory.create(act)
           if (api.isSupportOpenRecordPage) {
+            // 保存pending result以便回调时使用
+            pendingOpenRecordResult = result
             api.openRecordPage(request)
-            result.success(mapOf("success" to true))
           } else {
             result.error("UNSUPPORTED_RECORD", "当前抖音版本不支持拉起拍摄页", null)
           }
@@ -516,7 +523,7 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
         } else {
           result.error("AUTH_FAILED", "Authorization failed: ${response.errorMsg}", mapOf(
             "errorCode" to response.errorCode,
-            "errorMsg" to response.errorMsg
+            "errorMsg" to response.errorMsg,
           ))
         }
       } catch (e: Exception) {
@@ -525,6 +532,105 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
         pendingAuthResult = null
         authState = null
       }
+    }
+  }
+
+  // 处理分享回调
+  fun handleShareResponse(response: Share.Response) {
+    val result = pendingShareResult
+    if (result != null) {
+      try {
+        if (response.errorCode == 0) {
+          val shareResult = mapOf(
+            "success" to true,
+            "errorCode" to response.errorCode,
+            "subErrorCode" to response.subErrorCode,
+            "errorMsg" to (response.errorMsg ?: ""),
+            "state" to (response.state ?: "")
+          )
+          result.success(shareResult)
+          android.util.Log.d("DyOpenSdk", "分享成功: $shareResult")
+        } else {
+          result.error("SHARE_FAILED", "Share failed: ${response.errorMsg}", mapOf(
+            "errorCode" to response.errorCode,
+            "subErrorCode" to response.subErrorCode,
+            "errorMsg" to (response.errorMsg ?: ""),
+            "state" to (response.state ?: "")
+          ))
+          android.util.Log.d("DyOpenSdk", "分享失败: errorCode=${response.errorCode}, errorMsg=${response.errorMsg}")
+        }
+      } catch (e: Exception) {
+        result.error("SHARE_CALLBACK_ERROR", e.message, null)
+        android.util.Log.e("DyOpenSdk", "分享回调处理异常", e)
+      } finally {
+        pendingShareResult = null
+      }
+    } else {
+      android.util.Log.w("DyOpenSdk", "收到分享回调但没有pending result")
+    }
+  }
+
+  // 处理分享到好友回调
+  fun handleShareToContactResponse(response: ShareToContact.Response) {
+    val result = pendingShareToContactResult
+    if (result != null) {
+      try {
+        if (response.errorCode == 0) {
+          val shareResult = mapOf(
+            "success" to true,
+            "errorCode" to response.errorCode,
+            "errorMsg" to (response.errorMsg ?: ""),
+          )
+          result.success(shareResult)
+          android.util.Log.d("DyOpenSdk", "分享到好友成功: $shareResult")
+        } else {
+          result.error("SHARE_TO_CONTACT_FAILED", "Share to contact failed: ${response.errorMsg}", mapOf(
+            "errorCode" to response.errorCode,
+            "errorMsg" to (response.errorMsg ?: "")
+          ))
+          android.util.Log.d("DyOpenSdk", "分享到好友失败: errorCode=${response.errorCode}, errorMsg=${response.errorMsg}")
+        }
+      } catch (e: Exception) {
+        result.error("SHARE_TO_CONTACT_CALLBACK_ERROR", e.message, null)
+        android.util.Log.e("DyOpenSdk", "分享到好友回调处理异常", e)
+      } finally {
+        pendingShareToContactResult = null
+      }
+    } else {
+      android.util.Log.w("DyOpenSdk", "收到分享到好友回调但没有pending result")
+    }
+  }
+
+  // 处理拍摄页回调
+  fun handleOpenRecordResponse(response: OpenRecord.Response) {
+    val result = pendingOpenRecordResult
+    if (result != null) {
+      try {
+        if (response.errorCode == 0) {
+          val recordResult = mapOf(
+            "success" to true,
+            "errorCode" to response.errorCode,
+            "errorMsg" to (response.errorMsg ?: ""),
+            "state" to (response.state ?: "")
+          )
+          result.success(recordResult)
+          android.util.Log.d("DyOpenSdk", "拍摄页操作成功: $recordResult")
+        } else {
+          result.error("OPEN_RECORD_FAILED", "Open record failed: ${response.errorMsg}", mapOf(
+            "errorCode" to response.errorCode,
+            "errorMsg" to (response.errorMsg ?: ""),
+            "state" to (response.state ?: "")
+          ))
+          android.util.Log.d("DyOpenSdk", "拍摄页操作失败: errorCode=${response.errorCode}, errorMsg=${response.errorMsg}")
+        }
+      } catch (e: Exception) {
+        result.error("OPEN_RECORD_CALLBACK_ERROR", e.message, null)
+        android.util.Log.e("DyOpenSdk", "拍摄页回调处理异常", e)
+      } finally {
+        pendingOpenRecordResult = null
+      }
+    } else {
+      android.util.Log.w("DyOpenSdk", "收到拍摄页回调但没有pending result")
     }
   }
 

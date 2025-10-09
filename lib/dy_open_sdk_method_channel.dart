@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import 'dy_open_sdk_platform_interface.dart';
 import 'dy_open_sdk_exception.dart';
+import 'dy_open_sdk_platform_interface.dart';
 
 /// An implementation of [DyOpenSdkPlatform] that uses method channels.
 class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
@@ -17,36 +17,26 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
   }
 
   @override
-  Future<Map<String, dynamic>> initialize({
-    required String clientKey,
-    String? clientSecret,
-    bool debug = false,
-    Map<String, dynamic>? options,
-  }) async {
-    return await DyOpenSdkExceptionHandler.handleMethodCall(() async {
-      if (clientKey.isEmpty) {
-        throw DyOpenSdkException.parameterError('clientKey不能为空', paramName: 'clientKey');
-      }
-      
-      final result = await methodChannel.invokeMapMethod<String, dynamic>('initialize', {
-        'clientKey': clientKey,
-        'debug': debug,
-        // clientSecret和options在Android端不使用，但保持API一致性
-      });
-      return Map<String, dynamic>.from(result ?? {});
+  Future<Map<String, dynamic>> initialize({required String clientKey, String? clientSecret, bool debug = false, Map<String, dynamic>? options}) async {
+    final result = await methodChannel.invokeMapMethod<String, dynamic>('initialize', {
+      'clientKey': clientKey,
+      'debug': debug,
+      'clientSecret': clientSecret,
+      'options': options,
     });
+    return Map<String, dynamic>.from(result ?? {});
   }
 
   @override
-  Future<Map<String, dynamic>> authorize({
-    String scope = "user_info",
-    String? state,
-  }) async {
-    final result = await methodChannel.invokeMapMethod<String, dynamic>('authorize', {
-      'scope': scope,
-      'state': state,
-    });
-    return Map<String, dynamic>.from(result ?? {});
+  Future<Map<String, dynamic>> authorize({String scope = "user_info", String? state}) async {
+    try {
+      final result = await methodChannel.invokeMapMethod<String, dynamic>('authorize', {'scope': scope, 'state': state});
+      return Map<String, dynamic>.from(result ?? {});
+    } on PlatformException catch (e) {
+      throw DouyinException.fromJson(Map<String, dynamic>.from(e.details as Map<String, dynamic>));
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override
@@ -65,18 +55,7 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
     bool newShare = false,
     Map<String, dynamic>? shareParam,
   }) async {
-    return await DyOpenSdkExceptionHandler.handleMethodCall(() async {
-      if (media.isEmpty) {
-        throw DyOpenSdkException.parameterError('媒体文件列表不能为空', paramName: 'media');
-      }
-      
-      // 验证文件路径
-      for (final path in media) {
-        if (path.isEmpty) {
-          throw DyOpenSdkException.parameterError('媒体文件路径不能为空', paramName: 'media');
-        }
-      }
-      
+    try {
       final result = await methodChannel.invokeMapMethod<String, dynamic>('shareImages', {
         'media': media,
         'isAlbum': isAlbum,
@@ -87,7 +66,11 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
         'shareParam': shareParam,
       });
       return Map<String, dynamic>.from(result ?? {});
-    });
+    } on PlatformException catch (e) {
+      throw DouyinException.fromJson(Map.castFrom(e.details));
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override
@@ -99,18 +82,23 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
     bool newShare = false,
     Map<String, dynamic>? shareParam,
   }) async {
-    final result = await methodChannel.invokeMapMethod<String, dynamic>('shareVideos', {
-      'media': media,
-      'shareId': shareId,
-      'microAppInfo': microAppInfo,
-      'hashTags': hashTags,
-      'newShare': newShare,
-      'shareParam': shareParam,
-    });
-    return Map<String, dynamic>.from(result ?? {});
+    try {
+      final result = await methodChannel.invokeMapMethod<String, dynamic>('shareVideos', {
+        'media': media,
+        'shareId': shareId,
+        'microAppInfo': microAppInfo,
+        'hashTags': hashTags,
+        'newShare': newShare,
+        'shareParam': shareParam,
+      });
+      return Map<String, dynamic>.from(result ?? {});
+    } on PlatformException catch (e) {
+      throw DouyinException.fromJson(Map.castFrom(e.details));
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  // Android-only APIs
   @override
   Future<Map<String, dynamic>> shareDaily({
     required String media,
@@ -121,40 +109,46 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
     bool newShare = true,
     Map<String, dynamic>? shareParam,
   }) async {
-    final result = await methodChannel.invokeMapMethod<String, dynamic>('shareDaily', {
-      'media': media,
-      'mediaType': mediaType,
-      'shareId': shareId,
-      'microAppInfo': microAppInfo,
-      'hashTags': hashTags,
-      'newShare': newShare,
-      'shareParam': shareParam,
-    });
-    return Map<String, dynamic>.from(result ?? {});
+    try {
+      final result = await methodChannel.invokeMapMethod<String, dynamic>('shareDaily', {
+        'media': media,
+        'mediaType': mediaType,
+        'shareId': shareId,
+        'microAppInfo': microAppInfo,
+        'hashTags': hashTags,
+        'newShare': newShare,
+        'shareParam': shareParam,
+      });
+      return Map<String, dynamic>.from(result ?? {});
+    } on PlatformException catch (e) {
+      throw DouyinException.fromJson(Map.castFrom(e.details));
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override
-  Future<Map<String, dynamic>> shareImageToIm({
-    required String media,
-    String? shareId,
-  }) async {
-    final result = await methodChannel.invokeMapMethod<String, dynamic>('shareImageToIm', {
-      'media': media,
-      'shareId': shareId,
-    });
-    return Map<String, dynamic>.from(result ?? {});
+  Future<Map<String, dynamic>> shareImageToIm({required String media, String? shareId}) async {
+    try {
+      final result = await methodChannel.invokeMapMethod<String, dynamic>('shareImageToIm', {'media': media, 'shareId': shareId});
+      return Map<String, dynamic>.from(result ?? {});
+    } on PlatformException catch (e) {
+      throw DouyinException.fromJson(Map.castFrom(e.details));
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override
-  Future<Map<String, dynamic>> shareHtmlToIm({
-    required Map<String, dynamic> htmlObject,
-    String? shareId,
-  }) async {
-    final result = await methodChannel.invokeMapMethod<String, dynamic>('shareHtmlToIm', {
-      'htmlObject': htmlObject,
-      'shareId': shareId,
-    });
-    return Map<String, dynamic>.from(result ?? {});
+  Future<Map<String, dynamic>> shareHtmlToIm({required Map<String, dynamic> htmlObject, String? shareId}) async {
+    try {
+      final result = await methodChannel.invokeMapMethod<String, dynamic>('shareHtmlToIm', {'htmlObject': htmlObject, 'shareId': shareId});
+      return Map<String, dynamic>.from(result ?? {});
+    } on PlatformException catch (e) {
+      throw DouyinException.fromJson(Map.castFrom(e.details));
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override
@@ -164,12 +158,18 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
     List<String>? hashTags,
     Map<String, dynamic>? shareParam,
   }) async {
-    final result = await methodChannel.invokeMapMethod<String, dynamic>('openRecord', {
-      'shareId': shareId,
-      'microAppInfo': microAppInfo,
-      'hashTags': hashTags,
-      'shareParam': shareParam,
-    });
-    return Map<String, dynamic>.from(result ?? {});
+    try {
+      final result = await methodChannel.invokeMapMethod<String, dynamic>('openRecord', {
+        'shareId': shareId,
+        'microAppInfo': microAppInfo,
+        'hashTags': hashTags,
+        'shareParam': shareParam,
+      });
+      return Map<String, dynamic>.from(result ?? {});
+    } on PlatformException catch (e) {
+      throw DouyinException.fromJson(Map.castFrom(e.details));
+    } catch (e) {
+      rethrow;
+    }
   }
 }

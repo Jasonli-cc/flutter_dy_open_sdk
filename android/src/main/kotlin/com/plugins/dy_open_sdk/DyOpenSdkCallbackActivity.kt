@@ -86,19 +86,27 @@ class DyOpenSdkCallbackActivity : Activity(), IApiEventHandler {
     }
 
     private fun handleShareResponse(response: Share.Response) {
-        // 可以通过EventChannel或其他方式通知Flutter端分享结果
-        // 目前暂时只记录日志
         android.util.Log.d("DyOpenSdk", "Share result: errorCode=${response.errorCode}, subErrorCode=${response.subErrorCode}, errorMsg=${response.errorMsg}")
+        
+        // 获取插件实例并处理分享回调
+        val plugin = getPluginInstance()
+        plugin?.handleShareResponse(response)
     }
 
     private fun handleShareToContactResponse(response: ShareToContact.Response) {
-        // 处理分享到好友的结果
         android.util.Log.d("DyOpenSdk", "ShareToContact result: errorCode=${response.errorCode}, errorMsg=${response.errorMsg}")
+        
+        // 获取插件实例并处理分享到好友回调
+        val plugin = getPluginInstance()
+        plugin?.handleShareToContactResponse(response)
     }
 
     private fun handleOpenRecordResponse(response: OpenRecord.Response) {
-        // 处理拍摄页的结果
         android.util.Log.d("DyOpenSdk", "OpenRecord result: errorCode=${response.errorCode}, errorMsg=${response.errorMsg}")
+        
+        // 获取插件实例并处理拍摄页回调
+        val plugin = getPluginInstance()
+        plugin?.handleOpenRecordResponse(response)
     }
 
     private fun getPluginInstance(): DyOpenSdkPlugin? {

@@ -1,198 +1,43 @@
-import 'package:flutter/services.dart';
+enum DouyinShareError {
+  success(20000, '成功'),
+  unknownError(20001, '未知错误'),
+  paramValidError(20002, '参数解析错误，获取到的资源和传入的资源类型不一致'),
+  sharePermissionDenied(20003, '没有足够的权限进行操作，分享或授权之前请确认您的 App 有相关操作权限。可在 open.douyin.com 的管理中心查看你有哪些权限'),
+  userNotLogin(20004, '用户未登录'),
+  notHavePhotoLibraryPermission(20005, '抖音没有相册权限'),
+  networkError(20006, '抖音网络错误'),
+  videoTimeLimitError(20007, '视频时长不符合限制'),
+  photoResolutionError(20008, '图片资源分辨率不符合限制'),
+  timeStampError(20009, '时间戳检查失败'),
+  handleMediaError(20010, '处理照片资源出错'),
+  videoResolutionError(20011, '视频分辨率不符合限制'),
+  videoFormatError(20012, '视频格式不支持'),
+  cancel(20013, '用户取消分享'),
+  haveUploadingTask(20014, '用户有未完成编辑的发布内容'),
+  saveAsDraft(20015, '用户将分享内容存储为了草稿或用户账号不允许发布视频'),
+  publishFailed(20016, '发布视频失败'),
+  mediaInIcloudError(21001, '从 iCloud 同步资源出错'),
+  paramsParsingError(21002, '传递的参数处理错误'),
+  getMediaError(21003, '获取资源错误资源可能不存在');
 
-/// 抖音开放平台SDK异常处理
-/// 提供统一的异常类型定义和处理方法
-class DyOpenSdkException implements Exception {
-  /// 异常类型
-  final DyOpenSdkExceptionType type;
-
-  /// 错误码
-  final String code;
-
-  /// 错误消息
-  final String message;
-
-  /// 详细信息
-  final Map<String, dynamic>? details;
-
-  /// 原始异常
-  final dynamic originalException;
-
-  const DyOpenSdkException({required this.type, required this.code, required this.message, this.details, this.originalException});
-
-  /// 从PlatformException创建DyOpenSdkException
-  factory DyOpenSdkException.fromPlatformException(PlatformException e) {
-    final type = _parseExceptionType(e.code);
-    return DyOpenSdkException(type: type, code: e.code, message: e.message ?? '未知错误', details: e.details as Map<String, dynamic>?, originalException: e);
-  }
-
-  /// 创建参数错误异常
-  factory DyOpenSdkException.parameterError(String message, {String? paramName}) {
-    return DyOpenSdkException(
-      type: DyOpenSdkExceptionType.parameter,
-      code: 'BAD_ARGS',
-      message: message,
-      details: paramName != null ? {'parameterName': paramName} : null,
-    );
-  }
-
-  /// 创建网络错误异常
-  factory DyOpenSdkException.networkError(String message) {
-    return DyOpenSdkException(type: DyOpenSdkExceptionType.network, code: 'NETWORK_ERROR', message: message);
-  }
-
-  /// 创建API不支持异常
-  factory DyOpenSdkException.apiNotSupported(String apiName, String reason) {
-    return DyOpenSdkException(
-      type: DyOpenSdkExceptionType.apiCall,
-      code: 'API_NOT_SUPPORTED',
-      message: 'API不支持: $apiName - $reason',
-      details: {'apiName': apiName, 'reason': reason},
-    );
-  }
-
-  /// 解析异常类型
-  static DyOpenSdkExceptionType _parseExceptionType(String code) {
-    if (code.startsWith('INIT')) return DyOpenSdkExceptionType.initialization;
-    if (code.startsWith('BAD_ARGS') || code.startsWith('MISSING') || code.startsWith('INVALID')) {
-      return DyOpenSdkExceptionType.parameter;
-    }
-    if (code.startsWith('FILE')) return DyOpenSdkExceptionType.fileOperation;
-    if (code.startsWith('API') || code.startsWith('DOUYIN') || code.startsWith('SDK')) {
-      return DyOpenSdkExceptionType.apiCall;
-    }
-    if (code.startsWith('AUTH')) return DyOpenSdkExceptionType.authorization;
-    if (code.startsWith('SHARE')) return DyOpenSdkExceptionType.share;
-    if (code.startsWith('NETWORK') || code.startsWith('TIMEOUT')) {
-      return DyOpenSdkExceptionType.network;
-    }
-    return DyOpenSdkExceptionType.unknown;
-  }
-
-  /// 是否为用户取消操作
-  bool get isUserCancelled {
-    return code.contains('CANCELLED');
-  }
-
-  /// 是否为网络相关错误
-  bool get isNetworkError {
-    return type == DyOpenSdkExceptionType.network;
-  }
-
-  /// 是否为参数错误
-  bool get isParameterError {
-    return type == DyOpenSdkExceptionType.parameter;
-  }
-
-  /// 是否为API不支持错误
-  bool get isApiNotSupported {
-    return code == 'API_NOT_SUPPORTED' || code.startsWith('UNSUPPORTED');
-  }
-
-  /// 获取用户友好的错误消息
-  String get userFriendlyMessage {
-    switch (type) {
-      case DyOpenSdkExceptionType.initialization:
-        return 'SDK初始化失败，请检查配置';
-      case DyOpenSdkExceptionType.parameter:
-        return '参数错误，请检查输入参数';
-      case DyOpenSdkExceptionType.fileOperation:
-        return '文件操作失败，请检查文件路径和权限';
-      case DyOpenSdkExceptionType.apiCall:
-        if (code == 'DOUYIN_NOT_INSTALLED') {
-          return '请先安装抖音应用';
-        }
-        return 'API调用失败，请稍后重试';
-      case DyOpenSdkExceptionType.authorization:
-        if (isUserCancelled) {
-          return '用户取消了授权';
-        }
-        return '授权失败，请重新尝试';
-      case DyOpenSdkExceptionType.share:
-        if (isUserCancelled) {
-          return '用户取消了分享';
-        }
-        if (isApiNotSupported) {
-          return '当前抖音版本不支持此分享功能';
-        }
-        return '分享失败，请重新尝试';
-      case DyOpenSdkExceptionType.network:
-        return '网络连接失败，请检查网络设置';
-      case DyOpenSdkExceptionType.unknown:
-        return '操作失败，请重新尝试';
-    }
-  }
-
-  @override
-  String toString() {
-    return 'DyOpenSdkException(type: $type, code: $code, message: $message, details: $details)';
-  }
+  final int code;
+  final String desc;
+  const DouyinShareError(this.code, this.desc);
 }
 
-/// 异常类型枚举
-enum DyOpenSdkExceptionType {
-  /// SDK初始化异常
-  initialization('INIT', 'SDK初始化异常'),
+class DouyinException implements Exception {
+  static const int successCode = 0;
 
-  /// 参数异常
-  parameter('PARAM', '参数异常'),
+  final int? errorCode;
+  final int? subErrorCode;
+  final String? errorMsg;
+  final String? state;
 
-  /// 文件操作异常
-  fileOperation('FILE', '文件操作异常'),
+  factory DouyinException.fromJson(Map<String, dynamic> json) => DouyinException(json['errorCode'], json['subErrorCode'], json['errorMsg'], json['state']);
 
-  /// API调用异常
-  apiCall('API', 'API调用异常'),
+  bool get isSuccess => errorCode == DouyinException.successCode;
 
-  /// 授权异常
-  authorization('AUTH', '授权异常'),
+  DouyinShareError get shareError => DouyinShareError.values.firstWhere((element) => element.code == subErrorCode, orElse: () => DouyinShareError.unknownError);
 
-  /// 分享异常
-  share('SHARE', '分享异常'),
-
-  /// 网络异常
-  network('NETWORK', '网络异常'),
-
-  /// 未知异常
-  unknown('UNKNOWN', '未知异常');
-
-  const DyOpenSdkExceptionType(this.code, this.description);
-
-  /// 异常类型代码
-  final String code;
-
-  /// 异常类型描述
-  final String description;
-}
-
-/// 异常处理工具类
-class DyOpenSdkExceptionHandler {
-  /// 处理方法调用异常
-  static Future<T> handleMethodCall<T>(Future<T> Function() methodCall) async {
-    try {
-      return await methodCall();
-    } on PlatformException catch (e) {
-      throw DyOpenSdkException.fromPlatformException(e);
-    } catch (e) {
-      throw DyOpenSdkException(type: DyOpenSdkExceptionType.unknown, code: 'UNKNOWN_ERROR', message: e.toString(), originalException: e);
-    }
-  }
-
-  /// 处理异常并返回默认值
-  static Future<T> handleWithDefault<T>(Future<T> Function() methodCall, T defaultValue) async {
-    try {
-      return await handleMethodCall(methodCall);
-    } catch (e) {
-      return defaultValue;
-    }
-  }
-
-  /// 处理异常并执行回调
-  static Future<T?> handleWithCallback<T>(Future<T> Function() methodCall, {void Function(DyOpenSdkException)? onError}) async {
-    try {
-      return await handleMethodCall(methodCall);
-    } on DyOpenSdkException catch (e) {
-      onError?.call(e);
-      return null;
-    }
-  }
+  DouyinException(this.errorCode, this.subErrorCode, this.errorMsg, this.state);
 }

@@ -1,36 +1,20 @@
 import 'dy_open_sdk_platform_interface.dart';
 
-// 导出异常处理和配置相关类
 export 'dy_open_sdk_exception.dart';
-export 'dy_open_sdk_config.dart';
+
+enum MediaType { image, video }
 
 class DyOpenSdk {
   Future<String?> getPlatformVersion() {
     return DyOpenSdkPlatform.instance.getPlatformVersion();
   }
 
-  Future<Map<String, dynamic>> initialize({
-    required String clientKey,
-    String? clientSecret,
-    bool debug = false,
-    Map<String, dynamic>? options,
-  }) {
-    return DyOpenSdkPlatform.instance.initialize(
-      clientKey: clientKey,
-      clientSecret: clientSecret,
-      debug: debug,
-      options: options,
-    );
+  Future<Map<String, dynamic>> initialize({required String clientKey, String? clientSecret, bool debug = false, Map<String, dynamic>? options}) {
+    return DyOpenSdkPlatform.instance.initialize(clientKey: clientKey, clientSecret: clientSecret, debug: debug, options: options);
   }
 
-  Future<Map<String, dynamic>> authorize({
-    String scope = "user_info",
-    String? state,
-  }) {
-    return DyOpenSdkPlatform.instance.authorize(
-      scope: scope,
-      state: state,
-    );
+  Future<Map<String, dynamic>> authorize({String scope = "user_info", String? state}) {
+    return DyOpenSdkPlatform.instance.authorize(scope: scope, state: state);
   }
 
   Future<bool> isDouyinInstalled() {
@@ -78,7 +62,7 @@ class DyOpenSdk {
   // Android-only methods
   Future<Map<String, dynamic>> shareDaily({
     required String media,
-    required String mediaType, // 'image' | 'video'
+    required MediaType mediaType,
     String? shareId,
     Map<String, dynamic>? microAppInfo,
     List<String>? hashTags,
@@ -87,7 +71,7 @@ class DyOpenSdk {
   }) {
     return DyOpenSdkPlatform.instance.shareDaily(
       media: media,
-      mediaType: mediaType,
+      mediaType: mediaType.name,
       shareId: shareId,
       microAppInfo: microAppInfo,
       hashTags: hashTags,
@@ -96,37 +80,15 @@ class DyOpenSdk {
     );
   }
 
-  Future<Map<String, dynamic>> shareImageToIm({
-    required String media,
-    String? shareId,
-  }) {
-    return DyOpenSdkPlatform.instance.shareImageToIm(
-      media: media,
-      shareId: shareId,
-    );
+  Future<Map<String, dynamic>> shareImageToIm({required String media, String? shareId}) {
+    return DyOpenSdkPlatform.instance.shareImageToIm(media: media, shareId: shareId);
   }
 
-  Future<Map<String, dynamic>> shareHtmlToIm({
-    required Map<String, dynamic> htmlObject,
-    String? shareId,
-  }) {
-    return DyOpenSdkPlatform.instance.shareHtmlToIm(
-      htmlObject: htmlObject,
-      shareId: shareId,
-    );
+  Future<Map<String, dynamic>> shareHtmlToIm({required Map<String, dynamic> htmlObject, String? shareId}) {
+    return DyOpenSdkPlatform.instance.shareHtmlToIm(htmlObject: htmlObject, shareId: shareId);
   }
 
-  Future<Map<String, dynamic>> openRecord({
-    String? shareId,
-    Map<String, dynamic>? microAppInfo,
-    List<String>? hashTags,
-    Map<String, dynamic>? shareParam,
-  }) {
-    return DyOpenSdkPlatform.instance.openRecord(
-      shareId: shareId,
-      microAppInfo: microAppInfo,
-      hashTags: hashTags,
-      shareParam: shareParam,
-    );
+  Future<Map<String, dynamic>> openRecord({String? shareId, Map<String, dynamic>? microAppInfo, List<String>? hashTags, Map<String, dynamic>? shareParam}) {
+    return DyOpenSdkPlatform.instance.openRecord(shareId: shareId, microAppInfo: microAppInfo, hashTags: hashTags, shareParam: shareParam);
   }
 }

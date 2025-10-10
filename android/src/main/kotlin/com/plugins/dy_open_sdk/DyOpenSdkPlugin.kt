@@ -158,7 +158,7 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
           // 普通分享不设置shareToType，只有发日常才设置为1
           request.mMediaContent = MediaContent().apply {
             mMediaObject = if (isAlbum && media.size > 1) {
-              // 图集模式：多张图片时启用图集
+              // 图集模式：多张 `1``图片时启用图集
               ImageAlbumObject().apply {
                 mImagePaths = ArrayList<String>().apply { addAll(convertPathsWithProvider(act, media)) }
                 isImageAlbum = true

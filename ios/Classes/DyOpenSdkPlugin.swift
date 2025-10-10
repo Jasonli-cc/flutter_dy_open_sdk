@@ -59,7 +59,9 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
     case "getPlatformVersion":
       result("iOS " + UIDevice.current.systemVersion)
     case "getSDKVersion":
-      result(DouyinOpenSDKApplicationDelegate.sharedInstance().currentVersion())
+      // Fix: Handle optional return value properly
+      let version = DouyinOpenSDKApplicationDelegate.sharedInstance().currentVersion
+      result(version ?? "Unknown")
     case "initialize":
       initialize(call: call, result: result)
     case "authorize":
@@ -126,8 +128,9 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
       return
     }
 
-    // Check if SDK is initialized
-    guard !DouyinOpenSDKApplicationDelegate.sharedInstance().appId().isEmpty else {
+    // Check if SDK is initialized - Fix: Handle optional appId properly
+    let appId = DouyinOpenSDKApplicationDelegate.sharedInstance().appId()
+    guard let appId = appId, !appId.isEmpty else {
       result(
         FlutterError(
           code: Constants.ErrorCode.notInitialized,
@@ -154,8 +157,20 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
       return
     }
 
-    request.sendAuthRequestViewController(rootViewController) { response in
-      if response.errCode == 0 {
+    // Fix: Use updated method name for sending auth request
+    request.send(rootViewController) { response in
+      // Fix: Handle optional response properly
+      guard let response = response else {
+        result(
+          FlutterError(
+            code: Constants.ErrorCode.authError,
+            message: Constants.ErrorMessage.authorizationFailed,
+            details: nil))
+        return
+      }
+
+      // Fix: Convert DouyinOpenSDKErrorCode to Int properly
+      if response.errCode.rawValue == 0 {
         result([
           "success": true,
           "code": response.code ?? "",
@@ -163,11 +178,11 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
           "state": response.state ?? "",
         ])
       } else {
-        result([
-          "success": false,
-          "errorCode": response.errCode,
-          "errorMsg": response.errString ?? Constants.ErrorMessage.authorizationFailed,
-        ])
+        result(
+          FlutterError(
+            code: Constants.ErrorCode.authError,
+            message: response.errString ?? Constants.ErrorMessage.authorizationFailed,
+            details: ["errorCode": response.errCode.rawValue]))
       }
     }
   }
@@ -180,8 +195,9 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
 
   // MARK: - Share Images
   private func shareImages(args: [String: Any], result: @escaping FlutterResult) {
-    // Check if SDK is initialized
-    guard !DouyinOpenSDKApplicationDelegate.sharedInstance().appId().isEmpty else {
+    // Check if SDK is initialized - Fix: Handle optional appId properly
+    let appId = DouyinOpenSDKApplicationDelegate.sharedInstance().appId()
+    guard let appId = appId, !appId.isEmpty else {
       result(
         FlutterError(
           code: Constants.ErrorCode.notInitialized,
@@ -227,23 +243,30 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
     }
     if !extra.isEmpty { req.extraInfo = extra }
 
-    req.sendShareRequest { resp in
+    // Fix: Use correct method name for sending share request
+    req.send { resp in
+      print(resp)
       if resp.isSucceed {
         result(Constants.createSuccessResponse(message: "Images shared successfully"))
       } else {
+        var details: [String: Any] = [:]
+        details["errorCode"] = resp.errCode.rawValue
+        details["errorMessage"] = resp.errString
+        details["subErrorCode"] = resp.subErrorCode
         result(
-          Constants.createFailureResponse(
-            errorCode: resp.errorCode ?? -1,
-            errorMessage: resp.errorString ?? Constants.ErrorMessage.shareFailed
-          ))
+          FlutterError(
+            code: Constants.ErrorCode.shareError,
+            message: Constants.ErrorMessage.shareFailed,
+            details: details))
       }
     }
   }
 
   // MARK: - Share Videos
   private func shareVideos(args: [String: Any], result: @escaping FlutterResult) {
-    // Check if SDK is initialized
-    guard !DouyinOpenSDKApplicationDelegate.sharedInstance().appId().isEmpty else {
+    // Check if SDK is initialized - Fix: Handle optional appId properly
+    let appId = DouyinOpenSDKApplicationDelegate.sharedInstance().appId()
+    guard let appId = appId, !appId.isEmpty else {
       result(
         FlutterError(
           code: Constants.ErrorCode.notInitialized,
@@ -288,15 +311,22 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
     }
     if !extra.isEmpty { req.extraInfo = extra }
 
-    req.sendShareRequest { resp in
+    // Fix: Use correct method name for sending share request
+    req.send { resp in
+      print(resp)
       if resp.isSucceed {
         result(Constants.createSuccessResponse(message: "Videos shared successfully"))
       } else {
+        var details: [String: Any] = [:]
+        details["errorCode"] = resp.errCode.rawValue
+        details["errorMessage"] = resp.errString
+        details["subErrorCode"] = resp.subErrorCode
+
         result(
-          Constants.createFailureResponse(
-            errorCode: resp.errorCode ?? -1,
-            errorMessage: resp.errorString ?? Constants.ErrorMessage.shareFailed
-          ))
+          FlutterError(
+            code: Constants.ErrorCode.shareError,
+            message: Constants.ErrorMessage.shareFailed,
+            details: details))
       }
     }
   }

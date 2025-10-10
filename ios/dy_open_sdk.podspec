@@ -24,6 +24,9 @@ Pod::Spec.new do |s|
     'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386 arm64'
   }
   s.swift_version = '5.0'
+  
+  # Configure static linkage for DouyinOpenSDK
+  s.static_framework = true
 
   # If your plugin requires a privacy manifest, for example if it uses any
   # required reason APIs, update the PrivacyInfo.xcprivacy file to describe your

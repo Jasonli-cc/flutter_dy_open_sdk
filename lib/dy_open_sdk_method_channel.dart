@@ -33,6 +33,9 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
       final result = await methodChannel.invokeMapMethod<String, dynamic>('authorize', {'scope': scope, 'state': state});
       return Map<String, dynamic>.from(result ?? {});
     } on PlatformException catch (e) {
+      if (e.details == null) {
+        rethrow;
+      }
       throw DouyinException.fromJson(Map<String, dynamic>.from(e.details as Map<String, dynamic>));
     } catch (e) {
       rethrow;
@@ -67,6 +70,9 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
       });
       return Map<String, dynamic>.from(result ?? {});
     } on PlatformException catch (e) {
+      if (e.details == null) {
+        rethrow;
+      }
       throw DouyinException.fromJson(Map.castFrom(e.details));
     } catch (e) {
       rethrow;
@@ -93,6 +99,9 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
       });
       return Map<String, dynamic>.from(result ?? {});
     } on PlatformException catch (e) {
+      if (e.details == null) {
+        rethrow;
+      }
       throw DouyinException.fromJson(Map.castFrom(e.details));
     } catch (e) {
       rethrow;
@@ -121,6 +130,9 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
       });
       return Map<String, dynamic>.from(result ?? {});
     } on PlatformException catch (e) {
+      if (e.details == null) {
+        rethrow;
+      }
       throw DouyinException.fromJson(Map.castFrom(e.details));
     } catch (e) {
       rethrow;
@@ -133,6 +145,9 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
       final result = await methodChannel.invokeMapMethod<String, dynamic>('shareImageToIm', {'media': media, 'shareId': shareId});
       return Map<String, dynamic>.from(result ?? {});
     } on PlatformException catch (e) {
+      if (e.details == null) {
+        rethrow;
+      }
       throw DouyinException.fromJson(Map.castFrom(e.details));
     } catch (e) {
       rethrow;
@@ -145,6 +160,9 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
       final result = await methodChannel.invokeMapMethod<String, dynamic>('shareHtmlToIm', {'htmlObject': htmlObject, 'shareId': shareId});
       return Map<String, dynamic>.from(result ?? {});
     } on PlatformException catch (e) {
+      if (e.details == null) {
+        rethrow;
+      }
       throw DouyinException.fromJson(Map.castFrom(e.details));
     } catch (e) {
       rethrow;
@@ -167,6 +185,9 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
       });
       return Map<String, dynamic>.from(result ?? {});
     } on PlatformException catch (e) {
+      if (e.details == null) {
+        rethrow;
+      }
       throw DouyinException.fromJson(Map.castFrom(e.details));
     } catch (e) {
       rethrow;

@@ -152,6 +152,7 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
           val microAppInfoMap = args["microAppInfo"] as? Map<*, *>
           val hashTags = (args["hashTags"] as? List<*>)?.map { it.toString() }
           val newShare = args["newShare"] as? Boolean ?: false
+          val shareToPublish = args["shareToPublish"] as? Boolean ?: false
           val shareParamMap = args["shareParam"] as? Map<*, *>
 
           val request = Share.Request()
@@ -196,6 +197,10 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
             )
             return
           }
+          // Android不支持图片直接到发布页，若传入true则忽略并保留到编辑页
+          if (shareToPublish) {
+            android.util.Log.w("DyOpenSdk", "shareToPublish=true 对图片不生效，已回退到编辑页")
+          }
           
           android.util.Log.d("DyOpenSdk", "开始分享图片，媒体数量: ${media.size}, isAlbum参数: $isAlbum")
           android.util.Log.d("DyOpenSdk", "分享请求配置: callerLocalEntry=${request.callerLocalEntry}")
@@ -239,6 +244,7 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
           val microAppInfoMap = args["microAppInfo"] as? Map<*, *>
           val hashTags = (args["hashTags"] as? List<*>)?.map { it.toString() }
           val newShare = args["newShare"] as? Boolean ?: false
+          val shareToPublish = args["shareToPublish"] as? Boolean ?: false
           val shareParamMap = args["shareParam"] as? Map<*, *>
 
           val request = Share.Request()
@@ -257,6 +263,18 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
 
           val api = DouYinOpenApiFactory.create(act)
           if (api != null) {
+            // 若请求直达发布页，仅支持单视频且需抖音版本支持
+            if (shareToPublish) {
+              if (media.size == 1 && api.isAppSupportShareToPublish()) {
+                request.shareToPublish = true
+                android.util.Log.d("DyOpenSdk", "启用shareToPublish，直接到发布页")
+              } else {
+                android.util.Log.w(
+                  "DyOpenSdk",
+                  "shareToPublish 条件不满足（仅支持单视频且抖音版本需>=14.8.0），已回退到编辑页"
+                )
+              }
+            }
             // 保存pending result以便回调时使用
             pendingShareResult = result
             api.share(request)

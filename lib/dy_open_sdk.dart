@@ -28,6 +28,7 @@ class DyOpenSdk {
     Map<String, dynamic>? microAppInfo,
     List<String>? hashTags,
     bool newShare = false,
+    bool shareToPublish = false,
     Map<String, dynamic>? shareParam,
   }) {
     return DyOpenSdkPlatform.instance.shareImages(
@@ -37,6 +38,7 @@ class DyOpenSdk {
       microAppInfo: microAppInfo,
       hashTags: hashTags,
       newShare: newShare,
+      shareToPublish: shareToPublish,
       shareParam: shareParam,
     );
   }
@@ -47,6 +49,7 @@ class DyOpenSdk {
     Map<String, dynamic>? microAppInfo,
     List<String>? hashTags,
     bool newShare = false,
+    bool shareToPublish = false,
     Map<String, dynamic>? shareParam,
   }) {
     return DyOpenSdkPlatform.instance.shareVideos(
@@ -55,6 +58,7 @@ class DyOpenSdk {
       microAppInfo: microAppInfo,
       hashTags: hashTags,
       newShare: newShare,
+      shareToPublish: shareToPublish,
       shareParam: shareParam,
     );
   }

@@ -133,6 +133,8 @@ await dyOpenSdk.shareImages(
   media: ['/path/to/image1.jpg', '/path/to/image2.jpg'],
   isAlbum: true, // true为图集模式（需要多张图片）
   hashTags: ['#测试标签'],
+  // 控制落地页：Android图片不支持直达发布页，会回退到编辑页
+  shareToPublish: false,
 );
 
 // 单张图片分享
@@ -146,6 +148,8 @@ await dyOpenSdk.shareImages(
 await dyOpenSdk.shareVideos(
   media: ['/path/to/video.mp4'],
   hashTags: ['#视频标签'],
+  // 直接进入发布页（仅Android单视频且版本支持时生效；iOS完全支持）
+  shareToPublish: true,
 );
 
 // 发日常 (Android专用)
@@ -210,6 +214,7 @@ await dyOpenSdk.shareDaily(
 2. **文件分享**：Android 10+建议使用Content URI而非直接文件路径
 3. **权限申请**：分享功能需要相应的开放平台权限配置
 4. **版本兼容**：部分功能需要特定版本的抖音客户端支持
+6. **落地页控制（编辑/发布）**：通过 `shareToPublish` 参数控制；iOS 完全支持，Android 仅支持单视频直达发布页且需 `isAppSupportShareToPublish()` 返回 true，否则自动回退到编辑页。
 5. **图集模式**：
    - 图集模式需要至少2张图片才能生效
    - 单张图片时会自动使用单图模式，忽略isAlbum参数

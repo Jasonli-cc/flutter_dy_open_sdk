@@ -15,11 +15,29 @@
 2) 分享：
 - `shareImages` 与 `shareVideos` 分别用于图片与视频分享。
 - Android 支持文件路径或 Content URI；iOS 必须使用 `PHAsset` 的 `localIdentifiers`。
+ - 新增参数：`shareToPublish` 控制落地页（编辑页或发布页）。
+   - iOS：完全支持，`true` 跳转到发布页，`false` 跳转到编辑页。
+   - Android：仅支持单视频直达发布页，且需抖音客户端版本支持；图片分享会回退到编辑页。
 
 ## Dart API 概览
 - 初始化：`DyOpenSdk.initialize({ required clientKey, String? clientSecret, bool debug = false, Map<String, dynamic>? options })`
 - 图片分享：`DyOpenSdk.shareImages(...)`
 - 视频分享：`DyOpenSdk.shareVideos(...)`
+
+### 示例：控制分享到编辑页或发布页
+```dart
+// 分享视频，直接进入发布页（受Android端版本与单视频限制）
+await DyOpenSdk().shareVideos(
+  media: ['/path/to/video.mp4'],
+  shareToPublish: true, // true=发布页，false=编辑页
+);
+
+// 分享图片，Android不支持直达发布页，自动回退到编辑页
+await DyOpenSdk().shareImages(
+  media: ['/path/to/image1.jpg', '/path/to/image2.jpg'],
+  shareToPublish: false,
+);
+```
 
 详细参数说明请参考库内以下文件：
 - <mcfile name="dy_open_sdk_platform_interface.dart" path="/Users/lichaochao/dy_open_sdk/lib/dy_open_sdk_platform_interface.dart"></mcfile>
@@ -36,6 +54,7 @@
 - 分享媒体：
   - 支持传入文件路径或 Content URI。插件会自动转换为 FileProvider 可读 URI，并授予抖音读权限。
   - `isAlbum` 参数仅对 Android 有意义（图集分享）；iOS 端会忽略该参数。
+  - `shareToPublish`：仅支持单视频场景且需要 `isAppSupportShareToPublish()` 返回 true；其他情况将回退到编辑页。
 - 注意事项：
   - Android 10+ 建议使用 **Content URI**（SAF/MediaStore）而非直接文件路径，以符合分区存储策略。
   - 未安装抖音/极速版时分享会失败，请在业务层做好提示。
@@ -51,6 +70,7 @@
 - 分享媒体：
   - 传入 `PHAsset` 的 `localIdentifiers` 数组（图片或视频）。
   - 插件调用 `DouyinOpenSDKShareRequest` 的 `sendShareRequest` 发起分享，并通过回调返回结果。
+  - `shareToPublish`：通过设置 `DouyinOpenSDKShareRequest.landedPageType` 控制落地页（`.publish` 或 `.edit`）。
 - 注意事项：
   - iOS 端不支持 `isAlbum`/`newShare`/`hashTags` 参数，这些参数会被忽略（仅用于保持 API 一致性）。
   - 若需从文件路径分享，需先写入到系统相册并获取对应 `PHAsset.localIdentifier` 后再传给插件。

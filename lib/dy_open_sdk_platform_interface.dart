@@ -61,6 +61,9 @@ abstract class DyOpenSdkPlatform extends PlatformInterface {
     Map<String, dynamic>? microAppInfo,
     List<String>? hashTags,
     bool newShare = false,
+    // 控制分享到发布页（true）或编辑页（false）。
+    // 注意：Android 仅支持单视频直接到发布页；不满足条件时将回退到编辑页。
+    bool shareToPublish = false,
     Map<String, dynamic>? shareParam,
   }) {
     throw UnimplementedError('shareImages() has not been implemented.');
@@ -74,6 +77,9 @@ abstract class DyOpenSdkPlatform extends PlatformInterface {
     Map<String, dynamic>? microAppInfo,
     List<String>? hashTags,
     bool newShare = false,
+    // 控制分享到发布页（true）或编辑页（false）。
+    // 注意：Android 仅支持单视频直接到发布页；不满足条件时将回退到编辑页。
+    bool shareToPublish = false,
     Map<String, dynamic>? shareParam,
   }) {
     throw UnimplementedError('shareVideos() has not been implemented.');

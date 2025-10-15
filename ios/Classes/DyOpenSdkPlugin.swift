@@ -218,12 +218,15 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
     let microAppInfo = args["microAppInfo"] as? [String: Any]
     let shareParam = args["shareParam"] as? [String: Any]
     let hashTags = args["hashTags"] as? [String]
+    let shareToPublish = args["shareToPublish"] as? Bool ?? false
 
     // iOS 不支持 isAlbum/newShare，这里仅保持参数一致但不使用
     let req = DouyinOpenSDKShareRequest()
     req.localIdentifiers = media
     req.mediaType = .image
     if let shareId = shareId { req.state = shareId }
+    // 控制落地页类型：编辑页或发布页
+    req.landedPageType = shareToPublish ? .publish : .edit
 
     // 构建extraInfo
     var extra: [String: Any] = [:]
@@ -287,11 +290,14 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
     let microAppInfo = args["microAppInfo"] as? [String: Any]
     let shareParam = args["shareParam"] as? [String: Any]
     let hashTags = args["hashTags"] as? [String]
+    let shareToPublish = args["shareToPublish"] as? Bool ?? false
 
     let req = DouyinOpenSDKShareRequest()
     req.localIdentifiers = media
     req.mediaType = .video
     if let shareId = shareId { req.state = shareId }
+    // 控制落地页类型：编辑页或发布页
+    req.landedPageType = shareToPublish ? .publish : .edit
 
     // 构建extraInfo
     var extra: [String: Any] = [:]

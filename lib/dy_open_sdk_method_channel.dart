@@ -56,6 +56,7 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
     Map<String, dynamic>? microAppInfo,
     List<String>? hashTags,
     bool newShare = false,
+    bool shareToPublish = false,
     Map<String, dynamic>? shareParam,
   }) async {
     try {
@@ -66,6 +67,7 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
         'microAppInfo': microAppInfo,
         'hashTags': hashTags,
         'newShare': newShare,
+        'shareToPublish': shareToPublish,
         'shareParam': shareParam,
       });
       return Map<String, dynamic>.from(result ?? {});
@@ -86,6 +88,7 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
     Map<String, dynamic>? microAppInfo,
     List<String>? hashTags,
     bool newShare = false,
+    bool shareToPublish = false,
     Map<String, dynamic>? shareParam,
   }) async {
     try {
@@ -95,6 +98,7 @@ class MethodChannelDyOpenSdk extends DyOpenSdkPlatform {
         'microAppInfo': microAppInfo,
         'hashTags': hashTags,
         'newShare': newShare,
+        'shareToPublish': shareToPublish,
         'shareParam': shareParam,
       });
       return Map<String, dynamic>.from(result ?? {});

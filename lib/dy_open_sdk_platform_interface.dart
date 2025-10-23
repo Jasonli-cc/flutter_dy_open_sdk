@@ -64,6 +64,13 @@ abstract class DyOpenSdkPlatform extends PlatformInterface {
     // 控制分享到发布页（true）或编辑页（false）。
     // 注意：Android 仅支持单视频直接到发布页；不满足条件时将回退到编辑页。
     bool shareToPublish = false,
+    // shareParam 扩展参数：
+    // - titleObject: 标题对象（Android 生效；iOS 透传到 extraInfo）
+    //   结构示例：
+    //   TitleObject(title: '主标题', shortTitle: '短标题', markers: [
+    //     HashtagMarker(name: '#话题', start: 1),
+    //     MentionMarker(openId: 'open_id_xxx', start: 5),
+    //   ]).toMap()
     Map<String, dynamic>? shareParam,
   }) {
     throw UnimplementedError('shareImages() has not been implemented.');
@@ -80,6 +87,9 @@ abstract class DyOpenSdkPlatform extends PlatformInterface {
     // 控制分享到发布页（true）或编辑页（false）。
     // 注意：Android 仅支持单视频直接到发布页；不满足条件时将回退到编辑页。
     bool shareToPublish = false,
+    // shareParam 扩展参数：
+    // - titleObject: 标题对象（Android 生效；iOS 透传到 extraInfo）
+    //   结构示例参考 shareImages 的注释。
     Map<String, dynamic>? shareParam,
   }) {
     throw UnimplementedError('shareVideos() has not been implemented.');

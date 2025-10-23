@@ -1,6 +1,7 @@
 import 'dy_open_sdk_platform_interface.dart';
 
 export 'dy_open_sdk_exception.dart';
+export 'share_param_models.dart';
 
 enum MediaType { image, video }
 

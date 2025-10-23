@@ -667,6 +667,8 @@ class DyOpenSdkPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     val titleObj = TitleObject()
     (map["titleObject"] as? Map<*, *>)?.let { tMap ->
       (tMap["title"] as? String)?.let { titleObj.title = it }
+      // 新增：支持短标题（抖音 30.0.0+ 支持 shortTitle）
+      (tMap["shortTitle"] as? String)?.let { titleObj.shortTitle = it }
       (tMap["markers"] as? List<*>)?.forEach { marker ->
         val m = marker as? Map<*, *> ?: return@forEach
         when (m["type"]) {

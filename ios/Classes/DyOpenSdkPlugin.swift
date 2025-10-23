@@ -239,8 +239,19 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
       } else if let pei = sp["product_extra_info"] as? [String: Any] {
         extra["product_extra_info"] = pei
       }
+      // 新增：透传标题对象到 extraInfo（iOS 端可能忽略）
+      if let to = sp["titleObject"] as? [String: Any] {
+        if let title = to["title"] as? String {
+          extra["title"] = title
+        }
+        if let shortTitle = (to["shortTitle"] as? String) ?? (to["short_title"] as? String) {
+          extra["short_title"] = shortTitle
+        }
+        if let markers = to["markers"] as? [[String: Any]] {
+          extra["title_markers"] = markers
+        }
+      
     }
-    // iOS端支持hashTags（虽然Demo中注释了，但SDK支持）
     if let tags = hashTags, !tags.isEmpty {
       extra["hashtag_list"] = tags
     }
@@ -310,8 +321,19 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
       } else if let pei = sp["product_extra_info"] as? [String: Any] {
         extra["product_extra_info"] = pei
       }
+      // 新增：透传标题对象到 extraInfo（iOS 端可能忽略）
+      if let to = sp["titleObject"] as? [String: Any] {
+        if let title = to["title"] as? String {
+          extra["title"] = title
+        }
+        if let shortTitle = (to["shortTitle"] as? String) ?? (to["short_title"] as? String) {
+          extra["short_title"] = shortTitle
+        }
+        if let markers = to["markers"] as? [[String: Any]] {
+          extra["title_markers"] = markers
+        }
+      }
     }
-    // iOS端支持hashTags
     if let tags = hashTags, !tags.isEmpty {
       extra["hashtag_list"] = tags
     }

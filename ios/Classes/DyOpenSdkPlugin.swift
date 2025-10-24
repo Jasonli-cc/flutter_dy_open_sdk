@@ -171,10 +171,20 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
 
       // Fix: Convert DouyinOpenSDKErrorCode to Int properly
       if response.errCode.rawValue == 0 {
+        // 修复：严格转换 grantedPermissions 为 [String]
+        var perms: [String] = []
+        if let granted = response.grantedPermissions {
+          let arr = granted.array as? [Any] ?? []
+          perms = arr.compactMap { $0 as? String }
+          if perms.isEmpty {
+              // 兜底：无法转换为 String 时，使用描述字符串以保证可序列化
+              perms = arr.map { "\($0)" }
+          }
+        }
         result([
           "success": true,
           "code": response.code ?? "",
-          "grantedPermissions": Array(response.grantedPermissions ?? []),
+          "grantedPermissions": perms,
           "state": response.state ?? "",
         ])
       } else {
@@ -227,7 +237,8 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
     if let shareId = shareId { req.state = shareId }
     // 控制落地页类型：编辑页或发布页
     req.landedPageType = shareToPublish ? .publish : .edit
-
+    req.title = DouyinOpenSDKShareTitle()
+    
     // 构建extraInfo
     var extra: [String: Any] = [:]
     if let mp = microAppInfo {
@@ -242,18 +253,18 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
       // 新增：透传标题对象到 extraInfo（iOS 端可能忽略）
       if let to = sp["titleObject"] as? [String: Any] {
         if let title = to["title"] as? String {
-          extra["title"] = title
+          req.title.text = title
         }
         if let shortTitle = (to["shortTitle"] as? String) ?? (to["short_title"] as? String) {
-          extra["short_title"] = shortTitle
+          req.title.shortTitle = shortTitle
         }
-        if let markers = to["markers"] as? [[String: Any]] {
-          extra["title_markers"] = markers
-        }
-      
     }
     if let tags = hashTags, !tags.isEmpty {
-      extra["hashtag_list"] = tags
+      for tag in tags {
+        let t = DouyinOpenSDKTitleHashtag()
+        t.text = tag
+        req.title.hashtags.add(t)
+      }
     }
     if !extra.isEmpty { req.extraInfo = extra }
 
@@ -274,6 +285,7 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
             details: details))
       }
     }
+  }
   }
 
   // MARK: - Share Videos
@@ -302,8 +314,8 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
     let shareParam = args["shareParam"] as? [String: Any]
     let hashTags = args["hashTags"] as? [String]
     let shareToPublish = args["shareToPublish"] as? Bool ?? false
-
     let req = DouyinOpenSDKShareRequest()
+    req.title = DouyinOpenSDKShareTitle()
     req.localIdentifiers = media
     req.mediaType = .video
     if let shareId = shareId { req.state = shareId }
@@ -324,10 +336,10 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
       // 新增：透传标题对象到 extraInfo（iOS 端可能忽略）
       if let to = sp["titleObject"] as? [String: Any] {
         if let title = to["title"] as? String {
-          extra["title"] = title
+          req.title.text = title
         }
         if let shortTitle = (to["shortTitle"] as? String) ?? (to["short_title"] as? String) {
-          extra["short_title"] = shortTitle
+          req.title.shortTitle = shortTitle
         }
         if let markers = to["markers"] as? [[String: Any]] {
           extra["title_markers"] = markers
@@ -335,7 +347,11 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
       }
     }
     if let tags = hashTags, !tags.isEmpty {
-      extra["hashtag_list"] = tags
+      for tag in tags {
+        let t = DouyinOpenSDKTitleHashtag()
+        t.text = tag
+        req.title.hashtags.add(t)
+      }
     }
     if !extra.isEmpty { req.extraInfo = extra }
 
@@ -348,8 +364,10 @@ public class DyOpenSdkPlugin: NSObject, FlutterPlugin {
         var details: [String: Any] = [:]
         details["errorCode"] = resp.errCode.rawValue
         details["errorMessage"] = resp.errString
-        details["subErrorCode"] = resp.subErrorCode
-
+        // 修复：subErrorCode 仅在可转换为 Int 时传递，避免非基础类型造成崩溃
+        if let subInt = resp.subErrorCode as? Int {
+          details["subErrorCode"] = subInt
+        }
         result(
           FlutterError(
             code: Constants.ErrorCode.shareError,
